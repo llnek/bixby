@@ -1,4 +1,4 @@
-;; Copyright © 2013-2019, Kenneth Leung. All rights reserved.
+;; Copyright © 2013-2020, Kenneth Leung. All rights reserved.
 ;; The use and distribution terms for this software are covered by the
 ;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;; which can be found in the file epl-v10.html at the root of this distribution.
@@ -31,6 +31,7 @@
            [org.apache.shiro.authc UsernamePasswordToken]
            [java.security GeneralSecurityException]
            [org.apache.commons.fileupload FileItem]
+           [czlab.hoard.core JdbcSpec JdbcPool]
            [czlab.niou.upload ULFormItems]
            [czlab.basal DataError XData]
            [clojure.lang APersistentMap]
@@ -78,15 +79,6 @@
 (def ^:dynamic *auth-db* nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defprotocol WebAuthPluginAPI
-  (do-login [_ user pwd] "")
-  (add-account [_ options] "")
-  (has-account? [_ options] "")
-  (get-roles [_ acctObj] "")
-  (get-account [_ options] "")
-  (check-action [_ acctObj action] ""))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (hc/defschema
   auth-meta-cache
   (hc/dbmodel<> ::StdAddress
@@ -117,7 +109,8 @@
 (defn gen-auth-plugin-ddl
 
   "Generate db ddl for the auth-plugin."
-  ^String
+  {:tag String
+   :arglists '([spec])}
   [spec]
   {:pre [(keyword? spec)]}
 
@@ -128,25 +121,33 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn apply-ddl
 
-  [arg] (cond
-          (satisfies? hc/JdbcPool arg)
-          (apply-ddl (:jdbc arg))
+  "Upload DDL to the database."
+  {:arglists '([arg])}
+  [arg]
 
-          (c/is? czlab.hoard.core.JdbcSpec arg)
-          (when-some [t (hc/match-url?? (:url arg))]
-            (c/wo* [^Connection c (hc/conn<> arg)]
-              (hc/upload-ddl c (gen-auth-plugin-ddl t))))))
+  (c/condp?? instance? arg
+    JdbcPool
+    (apply-ddl (:jdbc arg))
+    JdbcSpec
+    (when-some [t (hc/match-url?? (:url arg))]
+      (c/wo* [c (hc/conn<> arg)]
+        (hc/upload-ddl c (gen-auth-plugin-ddl t))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn export-auth-pluglet-ddl
 
   "Output the auth-plugin ddl to file."
+  {:arglists '([spec file])}
   [spec file]
 
   (i/spit-utf8 file (gen-auth-plugin-ddl spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn new-session<>
+
+  "Create a new web session."
+  {:arglists '([evt]
+               [evt attrs])}
 
   ([evt]
    (new-session<> evt nil))
@@ -163,7 +164,9 @@
 
   "Create or delete a csrf cookie,
   if maxAge=-1, browser doesnt sent it back!"
-  {:tag HttpCookie}
+  {:tag HttpCookie
+   :arglists '([cfg]
+               [arg token])}
 
   ([cfg]
    (csrf-token<> cfg nil))
@@ -228,6 +231,7 @@
 (defn get-auth-info??
 
   "Attempt to parse and get authentication info."
+  {:arglists '([evt])}
   [evt]
 
   (c/if-some+ [ct (cc/msg-header evt "content-type")]
@@ -266,10 +270,10 @@
   (let [tbl (->> ::LoginAccount
                  (hc/find-model auth-meta-cache) hc/find-table)]
     (if-not (c/wo* [^Connection
-                    c (hc/next pool)]
+                    c (c/next pool)]
               (hc/table-exist? c tbl)) (apply-ddl pool))
     (if (c/wo* [^Connection
-                c (hc/next pool)] (hc/table-exist? c tbl))
+                c (c/next pool)] (hc/table-exist? c tbl))
       (c/info "czlab.blutbad.web.auth - db = ok.")
       (hc/dberr! (u/rstr (b/get-rc-base) "auth.no.table" tbl)))))
 
@@ -277,6 +281,7 @@
 (defn create-auth-role
 
   "Create a new auth-role in db."
+  {:arglists '([sql role desc])}
   [sql role desc]
   {:pre [(some? sql)]}
 
@@ -289,6 +294,7 @@
 (defn delete-auth-role
 
   "Delete this role."
+  {:arglists '([sql role])}
   [sql role]
   {:pre [(some? sql)]}
 
@@ -305,6 +311,7 @@
 (defn list-auth-roles
 
   "List all the roles in db."
+  {:arglists '([sql])}
   [sql]
   {:pre [(some? sql)]}
 
@@ -314,9 +321,12 @@
 (defn list-roles
 
   "List all roles assigned to this account."
+  {:arglists '([acct sql])}
   [acct sql]
 
-  (hr/get-m2m (hc/gmxm (hc/find-model (:schema sql) ::AccountRoles)) sql acct))
+  (hr/get-m2m
+    (hc/gmxm
+      (hc/find-model (:schema sql) ::AccountRoles)) sql acct))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn create-login-account
@@ -324,6 +334,9 @@
   "Create a new account
   props : extra properties, such as email address.
   roleObjs : a list of roles to be assigned to the account."
+  {:arglists '([sql user pwdObj]
+               [sql user pwdObj props]
+               [sql user pwdObj props roleObjs])}
 
   ([sql user pwdObj props]
    (create-login-account sql user pwdObj props nil))
@@ -355,24 +368,29 @@
 (defn find-login-account-via-email
 
   "Look for account with this email address."
+  {:arglists '([sql email])}
   [sql email]
   {:pre [(some? sql)]}
 
-  (hc/find-one sql ::LoginAccount {:email (c/strim email) }))
+  (first
+    (hc/find-some sql ::LoginAccount {:email (c/strim email) })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn find-login-account
 
   "Look for account with this user id."
+  {:arglists '([sql user])}
   [sql user]
   {:pre [(some? sql)]}
 
-  (hc/find-one sql ::LoginAccount {:acctid (c/strim user) }))
+  (first
+    (hc/find-some sql ::LoginAccount {:acctid (c/strim user) })))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn get-login-account
 
   "Get the user account."
+  {:arglists '([sql user pwd])}
   [sql user pwd]
 
   (if-some [acct (find-login-account sql user)]
@@ -387,12 +405,16 @@
 (defn has-login-account?
 
   "If this user account exists?"
-  [sql user] (some? (find-login-account sql user)))
+  {:arglists '([sql user])}
+  [sql user]
+
+  (some? (find-login-account sql user)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn change-login-account
 
   "Change the account password."
+  {:arglists '([sql userObj pwdObj])}
   [sql userObj pwdObj]
   {:pre [(some? sql)]}
 
@@ -408,6 +430,7 @@
 
   "Update account details
    details: a set of properties such as email address."
+  {:arglists '([sql userObj details])}
   [sql userObj details]
   {:pre [(some? sql)(or (nil? details)
                         (map? details))]}
@@ -423,7 +446,8 @@
 (defn delete-login-account-role
 
   "Remove a role from this user."
-  ^long
+  {:tag long
+   :arglists '([sql user role])}
   [sql user role]
   {:pre [(some? sql)]}
 
@@ -435,6 +459,7 @@
 (defn add-login-account-role
 
   "Add a role to this user."
+  {:arglists '([sql user role])}
   [sql user role]
   {:pre [(some? sql)]}
 
@@ -446,14 +471,19 @@
 (defn delete-login-account
 
   "Delete this account."
-  ^long
-  [sql acctObj] {:pre [(some? sql)]} (hc/del-obj sql acctObj))
+  {:tag long
+   :arglists '([sql acctObj])}
+  [sql acctObj]
+  {:pre [(some? sql)]}
+
+  (hc/del-obj sql acctObj))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn delete-user
 
   "Delete the account with this user id."
-  ^long
+  {:tag long
+   :arglists '([sql user])}
   [sql user]
   {:pre [(some? sql)]}
 
@@ -471,6 +501,7 @@
 (defn list-login-accounts
 
   "List all user accounts."
+  {:arglists '([sql])}
   [sql]
   {:pre [(some? sql)]}
 
@@ -501,7 +532,6 @@
           SecurityUtils/setSecurityManager)
       (finally
         (c/info "created shiro security manager - ok.")))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defrecord WebAuthPlugin [server _id info conf]
@@ -534,41 +564,84 @@
   (start [me _]
     (c/info "AuthPlugin started") me)
   (stop [me]
-    (c/info "AuthPlugin stopped") me)
-  WebAuthPluginAPI
-  (check-action [me acctObj action] me)
-  (add-account [me arg]
-    (let [{:keys [principal credential]} arg
-          pkey (i/x->chars (b/pkey server))]
-      (create-login-account (ht/simple (:db me))
-                            principal
-                            (co/pwd<> credential pkey)
-                            (dissoc arg :principal :credential) [])))
-  (do-login [me u p]
-    (binding [*auth-db* (:db me)]
-      (let [cur (SecurityUtils/getSubject)
-            sss (.getSession cur)]
-        (c/debug "Current user session %s, object %s." sss cur)
-        (when-not (.isAuthenticated cur)
-          (c/try! ;;(.setRememberMe token true)
-                  (.login cur
-                          (UsernamePasswordToken. ^String u (i/x->str p)))
-                  (c/debug "User [%s] logged in successfully." u)))
-        (if (.isAuthenticated cur)
-          (.getPrincipal cur)))))
-  (get-roles [_ acct] [])
-  (has-account? [me arg]
-    (let [pkey (i/x->chars (b/pkey server))]
-      (has-login-account? (ht/simple (:db me))
-                          (:principal arg))))
-  (get-account [me arg]
-    (let [{:keys [principal email]} arg
-          sql (ht/simple (:db me))
-          pkey (i/x->chars (b/pkey server))]
-      (cond (c/hgl? principal)
-            (find-login-account sql principal)
-            (c/hgl? email)
-            (find-login-account-via-email sql email)))))
+    (c/info "AuthPlugin stopped") me))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn check-action
+
+  "Check if action is allowed."
+  {:arglists '([p acctObj action])}
+  [p acctObj action] p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn add-account
+
+  "Create a new user account."
+  {:arglists '([auth arg])}
+  [auth arg]
+
+  (let [{:keys [principal credential]} arg
+        {:keys [server db]} auth
+        pkey (i/x->chars (b/pkey server))]
+    (create-login-account (ht/simple db)
+                          principal
+                          (co/pwd<> credential pkey)
+                          (dissoc arg :principal :credential) [])))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn do-login
+
+  "Attempt to login."
+  {:arglists '([auth u p])}
+  [auth u p]
+
+  (binding [*auth-db* (:db auth)]
+    (let [cur (SecurityUtils/getSubject)
+          sss (.getSession cur)]
+      (c/debug "Current user session %s, object %s." sss cur)
+      (when-not (.isAuthenticated cur)
+        (c/try! ;;(.setRememberMe token true)
+                (.login cur
+                        (UsernamePasswordToken. ^String u (i/x->str p)))
+                (c/debug "User [%s] logged in successfully." u)))
+      (if (.isAuthenticated cur)
+        (.getPrincipal cur)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn get-roles
+
+  "Get roles assigned to this account."
+  {:arglists '([auth acct])}
+
+  [auth acct] [])
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn has-account?
+
+  "Does this account exist?"
+  {:arglists '([auth arg])}
+  [auth arg]
+
+  (let [{:keys [server db]} auth
+        pkey (i/x->chars (b/pkey server))]
+    (has-login-account? (ht/simple db)
+                        (:principal arg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn get-account
+
+  "Get the account belonging to this user."
+  {:arglists '([auth arg])}
+  [auth arg]
+
+  (let [{:keys [server db]} auth
+        {:keys [principal email]} arg
+        sql (ht/simple db)
+        pkey (i/x->chars (b/pkey server))]
+    (cond (c/hgl? principal)
+          (find-login-account sql principal)
+          (c/hgl? email)
+          (find-login-account-via-email sql email))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- signup??
@@ -649,8 +722,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn web-auth<>
 
-  ([_ id]
-   (web-auth<> _ id WebAuthSpec))
+  "Create a Web Auth Plugin."
+  {:arglists '([co id]
+               [co id options])}
+
+  ([co id]
+   (web-auth<> co id WebAuthSpec))
 
   ([co id {:keys [info conf]}]
    (WebAuthPlugin. co id info conf)))
@@ -707,10 +784,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn login
 
+  "Handle a login event."
+  {:arglists '([evt])}
   [evt]
 
   (letfn
-    [(success [evt acct]
+    [(success [acct]
        (let [res (cc/http-result evt)
              plug (c/parent evt)
              svr (c/parent plug)
@@ -721,20 +800,22 @@
                      (ss/set-principal (:acctid acct)))]
          (-> (cc/res-cookie-add res ck)
              (cc/reply-result mvs))))
-     (fail [evt]
+     (fail []
        (-> (cc/http-result evt 403) cc/reply-result))]
     (c/if-throw
-      [rc (login?? evt)] (fail evt) (success evt rc))))
+      [rc (login?? evt)] (fail) (success rc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn do-signup
 
+  "Handle a sign-up event."
+  {:arglists '([evt])}
   [evt]
 
   (letfn
-    [(success [evt acct]
+    [(success [acct]
        (cc/reply-result (cc/http-result evt)))
-     (fail [evt ^Throwable err]
+     (fail [^Throwable err]
        (let [rcb (-> evt
                      c/parent
                      c/parent c/id b/get-rc-bundle)
@@ -750,7 +831,7 @@
                     (i/fmt->json {:error {:msg e}}))
                   (cc/res-body-set res))))))]
     (c/if-throw
-      [rc (signup?? "32" evt)] (fail evt rc) (success evt rc))))
+      [rc (signup?? "32" evt)] (fail rc) (success rc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

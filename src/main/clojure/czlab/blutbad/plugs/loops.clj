@@ -1,4 +1,4 @@
-;; Copyright © 2013-2019, Kenneth Leung. All rights reserved.
+;; Copyright © 2013-2020, Kenneth Leung. All rights reserved.
 ;; The use and distribution terms for this software are covered by the
 ;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;; which can be found in the file epl-v10.html at the root of this distribution.
@@ -54,7 +54,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn cfg-timer
 
-  ^TimerTask
+  "Config a timer."
+  {:tag TimerTask
+   :arglists '([timer wakeup arg repeat?])}
   [timer wakeup {:keys [interval-secs
                         delay-when delay-secs]} repeat?]
 
@@ -67,6 +69,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn schedule-threaded-loop
 
+  "Configure a loop using a thread."
+  {:arglists '([plug waker])}
   [{:keys [conf] :as plug} waker]
 
   (c/do-with [loopy (volatile! true)]
@@ -80,7 +84,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn stop-threaded-loop!
 
-  [loopy] (vreset! loopy false))
+  "Stop the loop thread."
+  {:arglists '([loopy])}
+  [loopy]
+
+  (vreset! loopy false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defrecord TimerMsg []
@@ -127,7 +135,11 @@
                          (evt<> me repeat?)) conf repeat?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def RepeatingTimerSpec
+(def
+  ^{:doc ""}
+
+  RepeatingTimerSpec
+
   {:info {:name "Repeating Timer"
           :version "1.0.0"}
    :conf {:$pluggable ::repeating-timer<>
@@ -137,7 +149,11 @@
           :interval-secs 300}})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def OnceTimerSpec
+(def
+  ^{:doc ""}
+
+  OnceTimerSpec
+
   {:info {:name "One Shot Timer"
           :version "1.0.0"}
    :conf {:$pluggable ::once-timer<>
@@ -148,6 +164,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn repeating-timer<>
 
+  "Create a Repeating Timer Plugin."
+  {:arglists '([server id]
+               [server id options])}
+
   ([ctr id {:keys [info conf]}]
    (TimerPlugin. ctr id info conf true))
 
@@ -156,6 +176,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn once-timer<>
+
+  "Create a One Shot Timer Plugin."
+  {:arglists '([server id]
+               [server id options])}
 
   ([_ id]
    (once-timer<> _ id OnceTimerSpec))

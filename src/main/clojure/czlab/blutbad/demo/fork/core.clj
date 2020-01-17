@@ -31,7 +31,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c/def- a1
-  #(c/do#nil
+  #(c/do->nil
      (let [job %2]
        (println "I am the *Parent*")
        (println "I am programmed to fork off a parallel child process, "
@@ -40,13 +40,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c/def- a2
   (w/group<>
-    #(c/do#nil
+    #(c/do->nil
        (let [job %2]
          (c/prn!! "*Child*: will create my own child (blocking)")
          (c/setv job :rhs 60)
          (c/setv job :lhs 5)))
     (w/split-join<> [:type :and]
-      #(c/do#nil
+      #(c/do->nil
          (let [job %2]
            (c/prn!! "*Child->child*: taking some time to do " "this task... ( ~ 6secs)")
            (dotimes [n 7]
@@ -56,7 +56,7 @@
            (c/setv job :result (* (c/getv job :rhs)
                                   (c/getv job :lhs)))
            (c/prn!! "*Child->child*: done."))))
-    #(c/do#nil
+    #(c/do->nil
        (let [job %2]
          (c/prn!! "*Child*: the result for (5 * 60) according to %s%s"
                   "my own child is = "
@@ -65,7 +65,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c/def- a3
-  #(c/do#nil
+  #(c/do->nil
      (let [_ %2
            b (c/sbf<> "*Parent*: ")]
        (c/prn!! "*Parent*: after fork, continue to calculate fib(6)...")

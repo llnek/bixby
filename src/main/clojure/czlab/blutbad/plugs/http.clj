@@ -1,4 +1,4 @@
-;; Copyright © 2013-2019, Kenneth Leung. All rights reserved.
+;; Copyright © 2013-2020, Kenneth Leung. All rights reserved.
 ;; The use and distribution terms for this software are covered by the
 ;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;; which can be found in the file epl-v10.html at the root of this distribution.
@@ -107,8 +107,11 @@
 (defn scan-basic-auth
 
   "Scan and parse if exists basic authentication."
-  [evt] (c/if-some+
-          [v (cc/msg-header evt auth-token)] (ct/parse-basic-auth v)))
+  {:arglists '([evt])}
+  [evt]
+
+  (c/if-some+
+    [v (cc/msg-header evt auth-token)] (ct/parse-basic-auth v)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- load-routes??
@@ -201,6 +204,7 @@
 (defn asset-loader
 
   "Load a file from the public folder."
+  {:arglists '([evt])}
   [{:keys [uri2 route] :as evt}]
 
   (letfn
@@ -324,7 +328,11 @@
     (assoc me :boot (-> (boot! me) (c/start conf)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def HTTPSpec
+(def
+  ^{:doc ""}
+
+  HTTPSpec
+
   {:info {:name "Web Site"
           :version "1.0.0"}
    :conf {:max-mem-size (* 4 c/MegaBytes)
@@ -373,12 +381,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn http<>
 
+  "Create a HTTP Plugin."
+  {:arglists '([server id]
+               [server id options])}
+
   ([_ id]
    (http<> _ id HTTPSpec))
 
   ([co id {:keys [info conf]}]
    (HTTPPlugin. co id info conf)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

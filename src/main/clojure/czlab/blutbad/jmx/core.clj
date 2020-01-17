@@ -1,4 +1,4 @@
-;; Copyright © 2013-2019, Kenneth Leung. All rights reserved.
+;; Copyright © 2013-2020, Kenneth Leung. All rights reserved.
 ;; The use and distribution terms for this software are covered by the
 ;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;; which can be found in the file epl-v10.html at the root of this distribution.
@@ -39,7 +39,9 @@
   "paths: [ \"a=b\" \"c=d\" ]
    domain: com.acme
    beanName: mybean."
-  {:tag ObjectName}
+  {:tag ObjectName
+   :arglists '([domain beanName]
+               [domain beanName paths])}
 
   ([domain beanName]
    (object-name<> domain beanName nil))
@@ -148,7 +150,12 @@
       (c/info "jmx plugin stopped - ok.") me2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def JMXSpec
+(def
+
+  ^{:doc ""}
+
+  JMXSpec
+
   {:info {:name "JMX Server"
           :version "1.0.0"}
    :conf {:$pluggable ::jmx-monitor<>
@@ -161,6 +168,10 @@
 ;;:host (-> (InetAddress/getLocalHost) .getHostName)})
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn jmx-monitor<>
+
+  "Create a JMX Monitor Plugin."
+  {:arglists '([server id]
+               [server id spec])}
 
   ([server _id]
    (jmx-monitor<> server _id JMXSpec))

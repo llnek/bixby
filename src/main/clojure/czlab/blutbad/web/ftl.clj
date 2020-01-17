@@ -1,4 +1,4 @@
-;; Copyright © 2013-2019, Kenneth Leung. All rights reserved.
+;; Copyright © 2013-2020, Kenneth Leung. All rights reserved.
 ;; The use and distribution terms for this software are covered by the
 ;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;; which can be found in the file epl-v10.html at the root of this distribution.
@@ -37,12 +37,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defprotocol CljApi
   (x->clj [_] "Turn something into clojure."))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defprotocol ConfigAPI
-  (load-template [_ tpath data] "")
-  (render->ftl [_ path model]
-               [_ path model xref?] ""))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (extend-protocol CljApi
@@ -110,27 +104,41 @@
                                (or shared-vars {}))]
          (.setSharedVariable cfg k v))))))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(extend-protocol ConfigAPI
-  Configuration
-  (load-template [cfg tpath data]
-    (let [ts (str "/" (c/triml tpath "/"))]
-      {:data (XData. (render->ftl cfg ts data))
-       :ctype (condp #(cs/ends-with? %2 %1) ts
-                ".json" "application/json"
-                ".xml" "application/xml"
-                ".html" "text/html"
-                ;else
-                "text/plain")}))
-  (render->ftl
-    ([cfg path model]
-     (render->ftl cfg path model nil))
-    ([cfg path model xref?]
-     (c/do-with-str [out (StringWriter.)]
-       (c/debug "about to render tpl: %s." path)
-       (if-some [t (.getTemplate cfg ^String path)]
-         (.process t
-                   (if xref? (x->ftl<model> model) model) out))))))
+(defn render->ftl
+
+  "Render a FreeMarker template."
+  {:arglists '([cfg path model]
+               [cfg path model xref?])}
+
+  ([cfg path model]
+   (render->ftl cfg path model nil))
+
+  ([cfg path model xref?]
+   {:pre [(c/is? Configuration cfg)]}
+   (c/do-with-str [out (StringWriter.)]
+     (c/debug "about to render tpl: %s." path)
+     (if-some [t (.getTemplate ^Configuration cfg ^String path)]
+       (.process t
+                 (if xref? (x->ftl<model> model) model) out)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn load-template
+
+  "Load and evaluate a FreeMarker template."
+  {:arglists '([cfg tpath data])}
+  [cfg tpath data]
+  {:pre [(c/is? Configuration cfg)]}
+
+  (let [ts (str "/" (c/triml tpath "/"))]
+    {:data (XData. (render->ftl cfg ts data))
+     :ctype (condp #(cs/ends-with? %2 %1) ts
+              ".json" "application/json"
+              ".xml" "application/xml"
+              ".html" "text/html"
+              ;else
+              "text/plain")}))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF

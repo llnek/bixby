@@ -1,4 +1,4 @@
-;; Copyright © 2013-2019, Kenneth Leung. All rights reserved.
+;; Copyright © 2013-2020, Kenneth Leung. All rights reserved.
 ;; The use and distribution terms for this software are covered by the
 ;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;; which can be found in the file epl-v10.html at the root of this distribution.
@@ -60,6 +60,7 @@
 (defn on-create
 
   "Create a new pod."
+  {:arglists '([args])}
   [args]
 
   (if (empty? args)
@@ -77,6 +78,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-podify
 
+  "Package app into a standalone app."
+  {:arglists '([args])}
   [args]
 
   (if (empty? args)
@@ -129,6 +132,7 @@
 (defn on-start
 
   "Start the application."
+  {:arglists '([args])}
   [args]
 
   (let [s2 (c/_1 args)
@@ -138,7 +142,7 @@
              (c/in? #{"-bg" "--background"} s2))
       (run-pod-bg cwd)
       (do (-> b/banner
-              ansi/bold-yellow c/prn!!) (e/start-via-cons cwd)))))
+              ansi/bold-magenta c/prn!!) (e/start-via-cons cwd)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn on-stop
@@ -167,7 +171,7 @@
 (defn on-debug
 
   "Debug the application."
-  {:no-doc true}
+  {:arglists '([args])}
   [args]
 
   (on-start args))
@@ -184,7 +188,7 @@
 (defn on-demos
 
   "Generate demo samples."
-  {:no-doc true}
+  {:arglists '([args])}
   [args]
 
   (if (empty? args)
@@ -195,6 +199,7 @@
 (defn gen-pwd
 
   "Generate a passord."
+  {:arglists '([args])}
   [args]
 
   (let [c (c/_1 args)
@@ -207,7 +212,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn gen-guid
 
-  "Generate a UUID." [] (u/uuid<>))
+  "Generate a UUID."
+  {:arglists '([])}
+  []
+
+  (u/uuid<>))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-encrypt
@@ -269,6 +278,7 @@
 (defn on-generate
 
   "Various generate functions."
+  {:arglists '([args])}
   [args]
 
   (let [c (c/_1 args)
@@ -285,6 +295,7 @@
 (defn prn-generate
 
   "Print from the function."
+  {:arglists '([args])}
   [args]
 
   (c/prn!! "%s" (on-generate args)))
@@ -301,6 +312,7 @@
 (defn on-test-jce
 
   "Assert JCE."
+  {:arglists '([args])}
   [args]
 
   (let [rcb (b/get-rc-base)]
@@ -319,6 +331,7 @@
 (defn on-version
 
   "Print out the version."
+  {:arglists '([args])}
   [args]
 
   (let [rcb (b/get-rc-base)]
@@ -391,6 +404,7 @@
 (defn on-ide
 
   "Generate project files for IDEs."
+  {:arglists '([args])}
   [args]
 
   (if-not (and (not-empty args)
@@ -410,6 +424,7 @@
 (defn on-service-specs
 
   "Print out specs for built-in plugins."
+  {:arglists '([args])}
   [args]
 
   (let [clj (u/cljrt<>)]
@@ -432,6 +447,7 @@
 (defn on-help-help
 
   "Help for action: help."
+  {:arglists '([])}
   []
 
   (u/throw-BadData "CmdError!"))
@@ -443,6 +459,7 @@
 (defn on-help
 
   "Print out help message for an action."
+  {:arglists '([args])}
   [args]
 
   (c/if-fn [h (c/_2 (blutbad-tasks

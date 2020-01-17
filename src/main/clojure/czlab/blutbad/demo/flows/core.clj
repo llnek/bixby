@@ -29,10 +29,10 @@
   [t]
 
   (case t
-    "facebook" #(c/do#nil %2 (c/prn!! "-> use facebook"))
-    "google+" #(c/do#nil %2 (c/prn!! "-> use google+"))
-    "openid" #(c/do#nil % (c/prn!! "-> use open-id"))
-    #(c/do#nil % (c/prn!! "-> use internal db"))))
+    "facebook" #(c/do->nil %2 (c/prn!! "-> use facebook"))
+    "google+" #(c/do->nil %2 (c/prn!! "-> use google+"))
+    "openid" #(c/do->nil % (c/prn!! "-> use open-id"))
+    #(c/do->nil % (c/prn!! "-> use internal db"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step1. choose a method to authenticate the user
@@ -57,7 +57,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step2
 (c/def- get-profile
-  #(c/do#nil %2 (c/prn!! "step(2): get user profile\n%s" "->user is superuser")))
+  #(c/do->nil %2 (c/prn!! "step(2): get user profile\n%s" "->user is superuser")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;step3 we are going to dummy up a retry of 2 times to simulate network/operation
@@ -70,7 +70,7 @@
            c (if (some? v) (inc v) 0)]
        (c/setv job :ami_count c)
        (< c 3))
-    #(c/do#nil
+    #(c/do->nil
        (let [job %2
              v (c/getv job :ami_count)
              c (if (some? v) v 0)]
@@ -91,7 +91,7 @@
            c (if (some? v) (inc v) 0)]
        (c/setv job :vol_count c)
        (< c 3))
-    #(c/do#nil
+    #(c/do->nil
        (let [job %2
              v (c/getv job :vol_count)
              c (if (some? v) v 0)]
@@ -112,7 +112,7 @@
            c (if (some? v) (inc v) 0)]
           (c/setv job :wdb_count c)
           (< c 3))
-    #(c/do#nil
+    #(c/do->nil
        (let [job %2
              v (c/getv job :wdb_count)
              c (if (some? v) v 0)]
@@ -133,21 +133,21 @@
 ;; this is the final step, after all the work are done, reply back to the caller.
 ;; like, returning a 200-OK
 (c/def- reply-user
-  #(c/do#nil
+  #(c/do->nil
      (let [job %2]
        (c/prn!! "step(5): we'd probably return a 200 OK %s"
                 "back to caller here"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c/def- error-user
-  #(c/do#nil
+  #(c/do->nil
      (let [job %2]
        (c/prn!! "step(5): we'd probably return a 200 OK %s"
                 "but with errors"))))
 
 ;; do a final test to see what sort of response should we send back to the user.
 (c/def- final-test
-  (wf/decision<> #(c/do#true %) reply-user error-user))
+  (wf/decision<> #(c/do->true %) reply-user error-user))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn demo

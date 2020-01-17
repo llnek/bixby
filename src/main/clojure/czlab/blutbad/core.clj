@@ -1,4 +1,4 @@
-;; Copyright © 2013-2019, Kenneth Leung. All rights reserved.
+;; Copyright © 2013-2020, Kenneth Leung. All rights reserved.
 ;; The use and distribution terms for this software are covered by the
 ;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;; which can be found in the file epl-v10.html at the root of this distribution.
@@ -28,8 +28,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmacro s2ms
+
   "Convert seconds to milliseconds."
+  {:arglists '([s])}
   [s]
+
   `(let [t# ~s] (if (czlab.basal.core/spos? t#) (* 1000 t#) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -98,7 +101,7 @@
 (def jslot-user :principal)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(c/defonce-
+(c/def-
   rc-bundles-cache
   (atom {:base nil :rcbs {}}))
 
@@ -106,6 +109,7 @@
 (defn del-rc-bundle!
 
   "Remove a resource bundle from the cache."
+  {:arglists '([b])}
   [b]
 
   (doto rc-bundles-cache
@@ -115,6 +119,7 @@
 (defn put-rc-bundle!
 
   "Add a resource bundle to the cache."
+  {:arglists '([b rc])}
   [b rc]
 
   (doto rc-bundles-cache
@@ -124,6 +129,7 @@
 (defn get-rc-bundle
 
   "Get a cached bundle."
+  {:arglists '([b])}
   [b]
 
   (if b (get-in @rc-bundles-cache [:rcbs b])))
@@ -132,6 +138,7 @@
 (defn get-rc-base
 
   "Get the baseline bundle."
+  {:arglists '([])}
   []
 
   (:base @rc-bundles-cache))
@@ -140,6 +147,7 @@
 (defn set-rc-base!
 
   "Set the baseline resource bundle."
+  {:arglists '([base])}
   [base]
 
   (doto rc-bundles-cache (swap! assoc :base base)))
@@ -147,8 +155,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn banner
 
-  "A ASCII banner."
-  {:no-doc true :tag String} []
+  "The ascii text banner."
+  {:tag String
+   :arglists '([])}
+  []
 
   (str "___.   .__          __ ___.               .___" "\n"
        "\\_ |__ |  |  __ ___/  |\\_ |__ _____     __| _/" "\n"
@@ -161,7 +171,9 @@
 (defn get-proc-dir
 
   "Get the current directory."
-  ^File []
+  {:tag File
+   :arglists '([])}
+  []
 
   (c/if-some+
     [d (u/get-sys-prop "blutbad.user.dir")] (io/file d) (u/get-user-dir)))
@@ -171,10 +183,13 @@
 
   "Get the app's config file - app.conf.
   First check the app-dir, then app-dir/conf."
-  ^File []
+  {:tag File
+   :arglists '([])}
+  []
 
-  (let [f1 (io/file (get-proc-dir) pod-cf)
-        f2 (io/file (get-proc-dir) dn-conf pod-cf)]
+  (let [dir (get-proc-dir)
+        f1 (io/file dir pod-cf)
+        f2 (io/file dir dn-conf pod-cf)]
     (cond (i/file-read? f1) f1
           (i/file-read? f2) f2
           :else (u/throw-IOE "No config file or not readable."))))
@@ -183,7 +198,9 @@
 (defn expand-sys-props
 
   "Expand system properties found in value."
-  ^String [value]
+  {:tag String
+   :arglists '([value])}
+  [value]
 
   (if (c/nichts? value)
     value (StringSubstitutor/replaceSystemProperties value)))
@@ -192,7 +209,9 @@
 (defn expand-env-vars
 
   "Expand environment vars found in value."
-  ^String [value]
+  {:tag String
+   :arglists '([value])}
+  [value]
 
   (if (c/nichts? value)
     value (-> (System/getenv) StringSubstitutor. (.replace ^String value))))
@@ -201,7 +220,9 @@
 (defn expand-vars
 
   "Replace all variables in value."
-  ^String [value]
+  {:tag String
+   :arglists '([value])}
+  [value]
 
   (if (or (c/nichts? value)
           (nil? (cs/index-of value "${")))
@@ -215,6 +236,7 @@
 (defn expand-vars*
 
   "Replace all variables in this form."
+  {:arglists '([form])}
   [form]
 
   (cw/postwalk #(if (string? %) (expand-vars %) %) form))
@@ -223,7 +245,9 @@
 (defn read-conf
 
   "Parse an edn configuration file."
-  {:tag String}
+  {:tag String
+   :arglists '([file]
+               [podDir confile])}
 
   ([podDir confile]
    (read-conf (io/file podDir dn-conf confile)))
@@ -238,9 +262,10 @@
 (defn precond-dir
 
   "Assert dir(s) are read-writeable?"
+  {:arglists '([f & dirs])}
   [f & dirs]
 
-  (c/let#true
+  (c/let->true
     [base (get-rc-base)]
     (doseq [d (cons f dirs)]
       (->> (i/dir-read-write? d)
@@ -251,9 +276,10 @@
 (defn precond-file
 
   "Assert file(s) are readable?"
+  {:arglists '([ff & files])}
   [ff & files]
 
-  (c/let#true
+  (c/let->true
     [base (get-rc-base)]
     (doseq [f (cons ff files)]
       (->> (i/file-read? f)
@@ -263,7 +289,9 @@
 (defn maybe-dir??
 
   "If the key maps to a File?"
-  ^File [m kn]
+  {:tag File
+   :arglists '([m kn])}
+  [m kn]
 
   (let [v (get m kn)]
     (condp instance? v
@@ -275,6 +303,8 @@
 (defn slurp-conf
 
   "Parse config file."
+  {:arglists '([f]
+               [podDir cf])}
 
   ([podDir cf]
    (slurp-conf (io/file podDir cf)))
@@ -287,6 +317,9 @@
 (defn spit-conf
 
   "Write out config file."
+  {:arglists '([f cfgObj]
+               [podDir conf cfgObj])}
+
   ([podDir conf cfgObj]
    (spit-conf (io/file podDir conf) cfgObj))
 
@@ -302,7 +335,9 @@
   "Scan the config object looking for references to
   functions, supported markers are $error, $action
   For each one found, load it as a Var via clojure/RT."
+  {:arglists '([cfg])}
   [cfg]
+
   ;the lock flag is used to signal that the next
   ;string is to be resolved.
 
@@ -348,7 +383,9 @@
 (defn plugin<>
 
   "Create a Service."
-  [exec id {:keys [enabled? $pluggable] :as cfg}]
+  {:arglists '([exec id cfg])}
+  [exec id {:keys [enabled?
+                   $pluggable] :as cfg}]
 
   (when (and $pluggable
              (c/!false? enabled?))
@@ -358,6 +395,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn dispatch
+
+  "Dispatch a plugin message."
+  {:arglists '([evt]
+               [evt arg])}
 
   ([evt]
    (dispatch evt nil))
@@ -378,7 +419,7 @@
                  (get-in plug
                          [:conf :$action]))
            f (if (var? h) (var-get h) h)]
-       (c/do#nil
+       (c/do->nil
          ;(c/debug "plug handler type = %s." (type h))
          ;(c/debug "plug handler func = %s." (type f))
          (c/debug "plug = %s, fn = %s." (c/id plug) f)

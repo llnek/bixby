@@ -1,4 +1,4 @@
-;; Copyright © 2013-2019, Kenneth Leung. All rights reserved.
+;; Copyright © 2013-2020, Kenneth Leung. All rights reserved.
 ;; The use and distribution terms for this software are covered by the
 ;; Eclipse Public License 1.0 (http://opensource.org/licenses/eclipse-1.0.php)
 ;; which can be found in the file epl-v10.html at the root of this distribution.
@@ -140,7 +140,7 @@
           {:keys [host user port passwd]} conf
           s (.getStore ^Session session ^String proto)]
       (if (nil? s)
-        (c/do#nil (c/warn "failed to get session store [%s]." proto))
+        (c/do->nil (c/warn "failed to get session store [%s]." proto))
         (let [_ (c/debug "connecting to session store [%s]..." proto)
               _ (.connect s
                           ^String host
@@ -189,7 +189,11 @@
       (assoc :sslvars sslvars :vars vars)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def POP3Spec
+(def
+  ^{:doc ""}
+
+  POP3Spec
+
   {:info {:name "POP3 Client"
           :version "1.0.0"}
    :conf {:$pluggable ::pop3<>
@@ -251,7 +255,11 @@
                 (close-store store)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(def IMAPSpec
+(def
+  ^{:doc ""}
+
+  IMAPSpec
+
   {:info {:name "IMAP Client"
           :version "1.0.0"}
    :conf {:$pluggable ::imap<>
@@ -269,6 +277,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn imap<>
 
+  "Create a IMAP Mail Plugin."
+  {:arglists '([server id]
+               [server id spec])}
+
   ([_ id]
    (imap _ id IMAPSpec))
 
@@ -277,6 +289,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn pop3<>
+
+  "Create a POP3 Mail Plugin."
+  {:arglists '([server id]
+               [server id spec])}
 
   ([_ id]
    (pop3<> _ id POP3Spec))
