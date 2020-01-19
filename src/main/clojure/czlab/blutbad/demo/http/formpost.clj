@@ -15,7 +15,8 @@
 
   (:import [org.apache.commons.fileupload FileItem]
            [java.io File]
-           [czlab.basal XData]))
+           [czlab.basal XData]
+           [czlab.niou.upload ULFormItems]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;(set! *warn-on-reflection* true)
@@ -28,7 +29,7 @@
   (let [^XData data (:body evt)
         res (cc/http-result evt)
         stuff (some-> data .content)]
-    (if (satisfies? cu/ULFormItems stuff)
+    (if (c/is? ULFormItems stuff)
       (doseq [^FileItem fi (cu/get-all-items stuff)]
         (c/prn!! "Fieldname: %s" (.getFieldName fi))
         (c/prn!! "Name: %s" (.getName fi))

@@ -8,7 +8,7 @@ Service bus, web framework
 
 Add the following dependency to your `project.clj` file:
 
-    [io.czlab/blutbad "1.1.0"]
+    [io.czlab/blutbad "2.0.0"]
 
 ## Documentation
 

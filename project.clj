@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defproject io.czlab/blutbad "1.1.0"
+(defproject io.czlab/blutbad "2.0.0"
 
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
@@ -11,15 +11,15 @@
   :dependencies [;[org.apache.commons/commons-lang3 "3.9"]
                  [org.apache.commons/commons-text "1.8"]
                  [commons-io/commons-io "2.6"]
-                 [io.aviso/pretty "0.1.37"]
+                 ;[io.aviso/pretty "0.1.37"]
                  ;[stencil "0.5.0"]
                  ;;shiro needs this
                  [commons-logging "1.2"]
-                 [io.czlab/twisty "1.1.0"]
-                 [io.czlab/flux "1.1.0"]
-                 [io.czlab/nettio "1.2.0"]
-                 [io.czlab/hoard "1.1.0"]
-                 [io.czlab/basal "1.1.0"]
+                 [io.czlab/twisty "2.0.0"]
+                 [io.czlab/flux "2.0.0"]
+                 [io.czlab/nettio "2.0.0"]
+                 [io.czlab/hoard "2.0.0"]
+                 [io.czlab/basal "2.0.0"]
                  [commons-net/commons-net "3.6"]
                  [org.apache.shiro/shiro-core "1.4.2"]
                  [org.freemarker/freemarker "2.3.29"]
