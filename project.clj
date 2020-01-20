@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defproject io.czlab/blutbad "2.0.0"
+(defproject io.czlab/blutbad "2.0.1"
 
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
@@ -15,15 +15,15 @@
                  ;[stencil "0.5.0"]
                  ;;shiro needs this
                  [commons-logging "1.2"]
-                 [io.czlab/twisty "2.0.0"]
-                 [io.czlab/flux "2.0.0"]
-                 [io.czlab/nettio "2.0.0"]
-                 [io.czlab/hoard "2.0.0"]
-                 [io.czlab/basal "2.0.0"]
+                 [io.czlab/twisty "2.0.1"]
+                 [io.czlab/flux "2.0.1"]
+                 [io.czlab/nettio "2.0.1"]
+                 [io.czlab/hoard "2.0.1"]
+                 [io.czlab/basal "2.0.1"]
                  [commons-net/commons-net "3.6"]
                  [org.apache.shiro/shiro-core "1.4.2"]
                  [org.freemarker/freemarker "2.3.29"]
-                 [io.czlab/antclj "1.0.4"]
+                 [io.czlab/cljant "2.0.1"]
                  [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1"]]
 
   :exclusions [org.clojure/clojure]
@@ -56,7 +56,8 @@
   :main czlab.blutbad.exec
 
   :jvm-opts ["-Dlog4j.configurationFile=file:attic/log4j2.xml" "-Dblutbad.kill.port=4444"]
-  :javac-options [;"-source" "8"
+  :javac-options ["-source" "11"
+                  "-target" "11"
                   "-Xlint:unchecked" "-Xlint:-options" "-Xlint:deprecation"])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

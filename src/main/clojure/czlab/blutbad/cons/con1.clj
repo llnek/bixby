@@ -8,7 +8,7 @@
 
 (ns czlab.blutbad.cons.con1
 
-  (:require [czlab.antclj.antlib :as a]
+  (:require [czlab.cljant.antlib :as a]
             [io.aviso.ansi :as ansi]
             [clojure.string :as cs]
             [clojure.java.io :as io]
