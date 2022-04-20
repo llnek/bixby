@@ -12,48 +12,41 @@
 ;;
 ;; Copyright © 2013-2022, Kenneth Leung. All rights reserved.
 
-(ns czlab.bixby.demo.mvc.core
+(ns czlab.bixby.demo.jms.core
 
-  (:require [czlab.niou.core :as cc]
-            [czlab.basal.core :as c]
-            [czlab.bixby.core :as b]
-            [czlab.bixby.plugs.mvc :as mvc])
+  (:require [czlab.basal.core :as c]
+            [czlab.bixby.core :as b])
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- ftl-context
-
-  []
-
-  {:landing {:title_line "Sample Web App"
-             :title_2 "Demo Skaro"
-             :tagline "Say something" }
-   :about {:title "About Skaro demo" }
-   :services {}
-   :contact {:email "a@b.com"}
-   :description "Default Skaro web app."
-   :encoding "utf-8"
-   :title "Skaro|Sample"})
+  (:import [java.util.concurrent.atomic AtomicInteger]
+           [javax.jms TextMessage]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn handler
-
-  [evt res]
-
-  (c/do-with
-    [ch (:socket evt)]
-    (let [ri (:route evt)
-          tpl (:template ri)
-          plug (c/parent evt)
-          co (c/parent plug)
-          {:keys [data ctype]}
-          (mvc/load-template co tpl (ftl-context))]
-      (->> (-> (cc/res-header-set res "content-type" ctype)
-               (assoc :body data))
-           cc/reply-result ))))
+;;(set! *warn-on-reflection* true)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn main
-  [_] (println "My AppMain called!"))
+(c/def- ^AtomicInteger gint (AtomicInteger.))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- ncount
+  [] (.incrementAndGet gint))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn demo
+
+  [evt]
+
+  (let [^TextMessage msg (:message evt)]
+    (c/prn!! "-> Correlation ID= %s" (.getJMSCorrelationID msg))
+    (c/prn!! "-> Msg ID= %s" (.getJMSMessageID msg))
+    (c/prn!! "-> Type= %s" (.getJMSType msg))
+    (c/prn!! "(%s) -> Message= %s" (ncount) (.getText msg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn my-main
+
+  [_]
+
+  (System/setProperty "czlab.bixby.mock.jms.loopsecs" "3"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
