@@ -63,6 +63,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (c/def- kw-kill (keyword (str "kill-" (u/jid<>))))
 (c/def- kw-jmx (keyword (str "jmx-" (u/jid<>))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- xref-plugs
 
@@ -73,14 +74,14 @@
         kill-host (-> (InetAddress/getLocalHost) .getHostName)
         kill (->> {:$pluggable :czlab.bixby.plugs.tcp/socket<>
                    :enabled? kill?
+                   :host kill-host
+                   :port kill-port
                    :$action (fn [evt]
                               (let [n (-> (:in evt)
                                           DataInputStream. .readInt)]
                                 (c/try! (.close ^Socket (:socket evt)))
                                 (when (== 117 n)
-                                  (p/async! (:stop! @ctx) {:daemon? true}))))
-                   :host kill-host
-                   :port kill-port}
+                                  (p/async! (:stop! @ctx) {:daemon? true})))) }
                   (b/plugin<> exec kw-kill))
         jmx (some->> (get-in @ctx
                              [:conf :jmx])

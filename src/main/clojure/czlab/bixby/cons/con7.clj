@@ -45,7 +45,7 @@
                    ["usage.stop"] ["usage.stop.desc"]))
                '(["usage.gen"] [ "usage.gen.desc"]
                  ["usage.version"] [ "usage.version.desc"]
-                 ["usage.testjce"] ["usage.testjce.desc"]
+                 ;;["usage.testjce"] ["usage.testjce.desc"]
                  ["usage.help"] ["usage.help.desc"]))
        (apply u/rstr* rcb)
        (partition 2)))

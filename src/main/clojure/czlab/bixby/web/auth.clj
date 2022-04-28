@@ -73,13 +73,12 @@
 ;;hard code the shift position, the encrypt code
 ;;should match this value.
 (c/def- caesar-shift 13)
-(c/def- props-map
-  {captcha-param [:captcha #(c/strim %)]
-   user-param [:principal #(c/strim %)]
-   pwd-param [:credential #(c/strim %)]
-   csrf-param [:csrf #(c/strim %)]
-   nonce-param [:nonce #(some? %)]
-   email-param [:email #(mi/normalize-email %)]})
+(c/def- props-map {captcha-param [:captcha #(c/strim %)]
+                   user-param [:principal #(c/strim %)]
+                   pwd-param [:credential #(c/strim %)]
+                   csrf-param [:csrf #(c/strim %)]
+                   nonce-param [:nonce #(some? %)]
+                   email-param [:email #(mi/normalize-email %)]})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def ^:dynamic *auth-db* nil)
@@ -841,5 +840,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;EOF
-
 

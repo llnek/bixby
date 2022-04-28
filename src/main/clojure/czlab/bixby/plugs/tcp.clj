@@ -51,8 +51,9 @@
 
   [plug soc]
 
-  (c/try! (c/debug "opened soc: %s." soc)
-          (b/dispatch (evt<> plug soc))))
+  (c/try!
+    (c/debug "opened soc: %s." soc)
+    (b/dispatch (evt<> plug soc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- ssoc<>

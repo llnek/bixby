@@ -307,25 +307,6 @@
   (c/prn!! "%s" (on-generate args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- on-help-test-jce
-
-  "Help for action: test-jce."
-  []
-
-  (on-help-xxx "usage.testjce.d" 2))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn on-test-jce
-
-  "Assert JCE."
-  {:arglists '([args])}
-  [args]
-
-  (let [rcb (b/get-rc-base)]
-    (tc/assert-jce)
-    (c/prn!! (u/rstr rcb "usage.testjce.ok"))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-version
 
   "Help for action: version."
@@ -477,8 +458,7 @@
 (alter-var-root
   #'bixby-tasks
   (fn [_]
-    {:testjce [on-test-jce on-help-test-jce]
-     :new [on-create on-help-create]
+    {:new [on-create on-help-create]
      :ide [on-ide on-help-ide]
      :podify [on-podify on-help-podify]
      :debug [on-debug on-help-debug]

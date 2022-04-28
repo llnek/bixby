@@ -73,7 +73,7 @@
     (u/throw-BadArg "Failed to convert %s" (class _))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn- x->ftl<model>
+(defn- x->ftl-model<>
 
   "Sanitize the model to be ftl compliant."
   [m]
@@ -106,10 +106,9 @@
        (doto cfg
          (.setDirectoryForTemplateLoading dir)
          (.setObjectWrapper (DefaultObjectWrapper.)))
-       (doseq [[^String k v] (x->ftl<model>
+       (doseq [[^String k v] (x->ftl-model<>
                                (or shared-vars {}))]
          (.setSharedVariable cfg k v))))))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn render->ftl
@@ -127,7 +126,7 @@
      (c/debug "about to render tpl: %s." path)
      (if-some [t (.getTemplate ^Configuration cfg ^String path)]
        (.process t
-                 (if xref? (x->ftl<model> model) model) out)))))
+                 (if xref? (x->ftl-model<> model) model) out)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn load-template
