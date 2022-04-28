@@ -1,6 +1,6 @@
 bixby
 =======
-Service bus, web framework
+Use *bixby* to build micro-services or web applications.
 
 [![Build Status](https://travis-ci.org/llnek/bixby.svg?branch=master)](https://travis-ci.org/llnek/bixby)
 
@@ -12,13 +12,12 @@ Add the following dependency to your `project.clj` file:
 
 ## Documentation
 
-* [API Docs](https://llnek.github.io/bixby/)
 
 ## Usage
 
-```clojure
+Run `lein new bixby your_app_name`
 
-```
+
 
 ## Contacting me / contributions
 
