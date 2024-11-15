@@ -10,7 +10,7 @@
 ;; See the License for the specific language governing permissions and
 ;; limitations under the License.
 ;;
-;; Copyright © 2013-2022, Kenneth Leung. All rights reserved.
+;; Copyright © 2013-2024, Kenneth Leung. All rights reserved.
 
 (ns czlab.bixby.web.auth
 
@@ -33,7 +33,8 @@
             [czlab.bixby.plugs.http :as hp])
 
   (:import [org.apache.shiro.authc.credential CredentialsMatcher]
-           [org.apache.shiro.config IniSecurityManagerFactory]
+           [org.apache.shiro.env BasicIniEnvironment]
+           ;[org.apache.shiro.config IniSecurityManagerFactory]
            [org.apache.shiro.authc UsernamePasswordToken]
            [java.security GeneralSecurityException]
            [org.apache.commons.fileupload FileItem]
@@ -532,8 +533,8 @@
     (try
       (-> (io/as-url f)
           str
-          IniSecurityManagerFactory.
-          .getInstance
+          BasicIniEnvironment.
+          .getSecurityManager
           SecurityUtils/setSecurityManager)
       (finally
         (c/info "created shiro security manager - ok.")))))

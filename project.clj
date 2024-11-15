@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-(defproject io.czlab/bixby "2.1.0"
+(defproject io.czlab/bixby "2.2.0"
 
   :license {:url "https://www.apache.org/licenses/LICENSE-2.0.txt"
             :name "Apache License"}
@@ -8,29 +8,29 @@
   :description "Service bus, web framework."
   :url "https://github.com/llnek/bixby"
 
-  :dependencies [[org.apache.commons/commons-text "1.9"]
-                 [commons-io/commons-io "2.11.0"]
+  :dependencies [[org.apache.commons/commons-text "1.12.0"]
+                 [commons-io/commons-io "2.17.0"]
                  ;;shiro needs this
-                 [commons-logging "1.2"]
-                 [io.czlab/twisty "2.1.0"]
-                 [io.czlab/flux "2.1.0"]
-                 [io.czlab/nettio "2.1.0"]
-                 [io.czlab/hoard "2.1.0"]
-                 [io.czlab/basal "2.1.0"]
-                 [commons-net/commons-net "3.8.0"]
-                 [org.apache.shiro/shiro-core "1.9.0"]
-                 [org.freemarker/freemarker "2.3.31"]
-                 [io.czlab/cljant "2.1.0"]
-                 [org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1"]]
+                 [commons-logging/commons-logging "1.3.4"]
+                 [io.czlab/twisty "2.2.0"]
+                 [io.czlab/flux "2.2.0"]
+                 [io.czlab/nettio "2.2.0"]
+                 [io.czlab/hoard "2.2.0"]
+                 [io.czlab/basal "2.2.0"]
+                 [io.czlab/cljant "2.2.0"]
+                 [commons-net/commons-net "3.11.1"]
+                 [org.apache.shiro/shiro-core "2.0.1"]
+                 [org.freemarker/freemarker "2.3.33"]]
 
-  :exclusions [org.clojure/clojure]
+  :XXXexclusions [org.clojure/clojure]
 
-  :plugins [[cider/cider-nrepl "0.28.3"]
+  :plugins [[cider/cider-nrepl "0.50.2" :exclusions [nrepl/nrepl]]
             [lein-codox "0.10.8"]
             [lein-cljsbuild "1.1.8"]]
 
-  :profiles {:provided {:dependencies
-                        [[org.clojure/clojure "1.11.1" :scope "provided"]]}
+  :profiles {:provided {:dependencies [[org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1"]
+                                       [com.sun.mail/javax.mail "1.6.2"]
+                                       [org.clojure/clojure "1.12.0"]]}
              :uberjar {:aot :all}}
 
   :aliases {"bixby" ["trampoline" "run" "-m" "czlab.bixby.cons.con4"]
@@ -38,6 +38,7 @@
             "bixby-console" ["trampoline" "run" "-m" "czlab.bixby.cons.con7"]}
 
   :global-vars {*warn-on-reflection* true}
+  :preserve-eval-meta true
   :target-path "out/%s"
   :aot :all
 
@@ -54,7 +55,7 @@
 
   :jvm-opts ["-Dlog4j.configurationFile=file:attic/log4j2.xml" "-Dbixby.kill.port=4444"]
   :javac-options ["-source" "16"
-                  "-target" "16"
+                  "-target" "22"
                   "-Xlint:unchecked" "-Xlint:-options" "-Xlint:deprecation"])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
