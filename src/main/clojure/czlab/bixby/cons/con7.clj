@@ -64,8 +64,7 @@
                :dash " "
                :body-walls walls
                :header-walls walls}]
-    (-> (b/banner)
-        ansi/bold-magenta c/prn!!)
+    (b/prn-banner)
 
     (c/prn!! "%s\n"
              (u/rstr rcb "bixby.desc"))

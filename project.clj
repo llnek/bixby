@@ -26,7 +26,13 @@
 
   :plugins [[cider/cider-nrepl "0.50.2" :exclusions [nrepl/nrepl]]
             [lein-codox "0.10.8"]
+            [lein-tar "3.3.0"]
             [lein-cljsbuild "1.1.8"]]
+
+  :tar {:uberjar false
+        :format :tar-gz
+        :XXXoutput-dir "foobar"
+        :XXXleading-path "bazquux"}
 
   :profiles {:provided {:dependencies [[org.apache.geronimo.specs/geronimo-jms_1.1_spec "1.1.1"]
                                        [com.sun.mail/javax.mail "1.6.2"]

@@ -52,7 +52,7 @@
                   (u/rstr (b/get-rc-base)
                           (str pfx (+ 1 n)))))
        (finally
-         (c/prn!! ""))))
+         (c/prn!! ""))) "")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- on-help-create
@@ -278,6 +278,7 @@
   "Help for action: generate."
   []
 
+  (b/prn-banner)
   (on-help-xxx "usage.gen.d" 9))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -295,7 +296,7 @@
           (c/in? #{"-u" "--uuid"} c) (gen-guid)
           (c/in? #{"-e" "--encrypt"} c) (on-encrypt args)
           (c/in? #{"-d" "--decrypt"} c) (on-decrypt args)
-          :else (u/throw-BadData "CmdError!"))))
+          :else (on-help-generate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn prn-generate
@@ -322,6 +323,7 @@
   [args]
 
   (let [rcb (b/get-rc-base)]
+    (b/prn-banner)
     (->> (u/get-sys-prop "bixby.version")
          (u/rstr rcb "usage.version.o1")
          (c/prn!! "%s" ))
