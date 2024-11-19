@@ -27,6 +27,7 @@
             [czlab.basal.util :as u]
             [czlab.basal.io :as i]
             [czlab.nettio.core :as nc]
+            [czlab.nettio.resp :as rs]
             [czlab.nettio.server :as sv]
             [czlab.bixby.core :as b]
             [czlab.bixby.web.ftl :as t]
@@ -94,6 +95,11 @@
 ;;(set! *warn-on-reflection* true)
 (c/def- ^String auth-token "authorization")
 (c/def- ^String basic-token "basic")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;need to do this hack to pull in czlab.nettio.resp otherwise
+;those protocol extension in czlab.nettio.niou won't work!
+(c/def- GRAB_NETTY rs/NIOU_NETTY_RESP)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (extend-type WsockMsg
