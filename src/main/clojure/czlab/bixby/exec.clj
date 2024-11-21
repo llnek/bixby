@@ -365,7 +365,9 @@
         (not @stopcli?)
         (u/pause main-wait-millis))
       (c/try! (shutdown-agents))
-      (c/info "exiting main()..."))))
+      (c/info "exiting main()..."))
+
+    @ctx))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn start-via-config
@@ -382,6 +384,18 @@
      (start* home confObj join?)
      (catch Throwable _ (c/exception _)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn- parse-args
+
+  ""
+  [args]
+
+  (let [[opts _] (u/parse-options args)
+        dir (c/if-some+
+              [h (:home opts)]
+              (io/file h) (u/get-user-dir))]
+    (->> dir u/fpath (u/set-sys-prop! "bixby.user.dir")) dir))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn start-via-cons
 
@@ -390,8 +404,19 @@
   [home]
 
   (-> (b/banner) ansi/bold-magenta c/prn!!)
-  (c/debug "checking for <app.conf>...")
+  (c/debug "start-via-cons: checking for <app.conf>...")
   (-> (b/get-conf-file) b/slurp-conf ((partial start-via-config home) true)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn start-via-api
+
+  "Starts bixby via function call."
+  {:arglists '([args])}
+  [args]
+
+  (let [home (parse-args args)]
+    (c/debug "start-via-api: checking for <app.conf>...")
+    (-> (b/get-conf-file) b/slurp-conf ((partial start-via-config home) false))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn -main
@@ -399,15 +424,7 @@
   "Main function."
   [& args]
 
-  (let [[opts _] (u/parse-options args)
-        dir (c/if-some+
-              [h (:home opts)]
-              (io/file h) (u/get-user-dir))]
-    (->> dir
-         u/fpath
-         (u/set-sys-prop!
-           "bixby.user.dir"))
-    (start-via-cons dir)))
+  (start-via-cons (parse-args args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;EOF
