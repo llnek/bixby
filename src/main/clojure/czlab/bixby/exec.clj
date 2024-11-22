@@ -265,6 +265,7 @@
       (home-dir [_] (:home-dir @ctx))
       (locale [_] (:locale @ctx))
       (kill9! [_] (c/funcit?? (:stop! @ctx)))
+      (context [_] @ctx)
       (has-plugin? [_ sid]
         (c/in? (get-in @ctx
                        [:conf :plugins]) (keyword sid)))
@@ -345,29 +346,26 @@
     (c/info "bixby's i18n.base loaded - ok.")
 
     ;bring up the app
-    (primodial ctx stopcli?)
+    (c/do-with [exec (primodial ctx stopcli?)]
+      ;keep track of process id
+      (doto ^File
+        (:pid-file @ctx)
+        (i/spit-utf8 (p/process-pid)) .deleteOnExit)
 
-    ;keep track of process id
-    (doto ^File
-      (:pid-file @ctx)
-      (i/spit-utf8 (p/process-pid)) .deleteOnExit)
+      (c/info "wrote bixby.pid - ok.")
+      ;install exit function
+      (p/exit-hook (:stop! @ctx))
+      (c/info "added shutdown hook - ok.")
+      (c/info "bixby is now running...")
 
-    (c/info "wrote bixby.pid - ok.")
-    ;install exit function
-    (p/exit-hook (:stop! @ctx))
-    (c/info "added shutdown hook - ok.")
-    (c/info "bixby is now running...")
+      ;block?
 
-    ;block?
-
-    (when join?
-      (while
-        (not @stopcli?)
-        (u/pause main-wait-millis))
-      (c/try! (shutdown-agents))
-      (c/info "exiting main()..."))
-
-    @ctx))
+      (when join?
+        (while
+          (not @stopcli?)
+          (u/pause main-wait-millis))
+        (c/try! (shutdown-agents))
+        (c/info "exiting main()...")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn start-via-config
