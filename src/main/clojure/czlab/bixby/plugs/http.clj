@@ -164,6 +164,11 @@
 
   [plug ch msg]
 
+  "Message structure:
+    :body => czlab.basal.XData
+    :is-text? => bool
+    :socket => io.netty.channel.socket.nio.NioSocketChannel
+  "
   (assoc msg
          :socket ch
          :source plug
@@ -172,6 +177,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn- http-event<>
+
+  "Message structure from nettio:
+    :ssl-client-cert => X509Certificate
+    :protocol => String
+    :remote-host => String
+    :socket => io.netty.channel.socket.nio.NioSocketChannel
+    :local-port => int
+    :cookies , => {}
+    :remote-addr => String
+    :remote-port => long
+    :route => keyword
+    :charset => sun.nio.cs.UTF_8
+    :local-addr => String
+    :headers => czlab.niou.Headers
+    :server-port => long
+    :keep-alive? => bool
+    :ssl? => bool
+    :local-host => String
+    :uri2 => java.net.URI
+    :uri => String
+    :server-name => String
+    :query-string => String
+    :body => czlab.basal.XData
+    :parameters => {}
+    :scheme => keyword
+    :request-method => keyword
+  "
 
   [plug ch req]
 

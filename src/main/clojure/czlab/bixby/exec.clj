@@ -86,6 +86,7 @@
         jmx (some->> (get-in @ctx
                              [:conf :jmx])
                      (b/plugin<> exec kw-jmx))
+        ;_ (c/debug "created JMS plugin: %s" jmx)
         ps (c/preduce<map>
              #(let [[k cfg] %2
                     p (b/plugin<> exec k cfg)]
@@ -265,7 +266,6 @@
       (home-dir [_] (:home-dir @ctx))
       (locale [_] (:locale @ctx))
       (kill9! [_] (c/funcit?? (:stop! @ctx)))
-      (context [_] @ctx)
       (has-plugin? [_ sid]
         (c/in? (get-in @ctx
                        [:conf :plugins]) (keyword sid)))

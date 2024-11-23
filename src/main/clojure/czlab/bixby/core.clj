@@ -392,7 +392,6 @@
   (scheduler [_] "")
   (home-dir [_] "")
   (uptime [_] "")
-  (context [_] "")
   (dbapi?? [_] [_ id] "")
   (dbpool?? [_] [_ id] ""))
 
